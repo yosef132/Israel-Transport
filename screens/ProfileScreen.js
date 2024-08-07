@@ -109,7 +109,7 @@ const ProfileScreen = ({ navigation }) => {
   if (!profileData) {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>Failed to load profile data., Please try again later.</Text>
+        <Text style={styles.errorText}>Failed to load profile data. Please try again later.</Text>
         <Button title="Go to Welcome Screen" onPress={() => navigation.navigate('WelcomeScreen')} />
       </View>
     );
