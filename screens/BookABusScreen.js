@@ -36,11 +36,20 @@ const BookABusScreen = ({ route, navigation }) => {
   useEffect(() => {
     // Fetch available vehicles and booking types
     const fetchVehicles = async () => {
+      setLoading(true);
       try {
         const response = await axios.get('https://israeltransport.onrender.com/api/vehicles/GetAllVehicles');
-        setVehicles(response.data);
+        if (response.data && Array.isArray(response.data)) {
+          setVehicles(response.data);
+        } else {
+          console.error('Unexpected data format:', response.data);
+          Alert.alert('Error', 'Failed to load vehicles data. Please try again.');
+        }
       } catch (error) {
         console.error('Error fetching vehicles:', error);
+        Alert.alert('Error', 'Failed to fetch vehicles');
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -129,14 +138,17 @@ const BookABusScreen = ({ route, navigation }) => {
           placeholder={{ label: 'Select Booking Type', value: null }}
         />
 
-        <Text style={styles.label}>Vehicle</Text>
-        <RNPickerSelect
-          onValueChange={(value) => handleChange('vehicleID', value)}
-          items={vehicles.map((vehicle) => ({ label: `${vehicle.make} ${vehicle.model}`, value: vehicle.VehicleID }))}
-          style={pickerSelectStyles}
-          value={formData.vehicleID}
-          placeholder={{ label: 'Select Vehicle', value: null }}
-        />
+     <RNPickerSelect
+  onValueChange={(value) => handleChange('vehicleID', value)}
+  items={vehicles.map((vehicle) => ({
+    label: `${vehicle.Make} ${vehicle.Model} (${vehicle.carPlateNumber})`,
+    value: vehicle.VehicleID,
+  }))}
+  style={pickerSelectStyles}
+  value={formData.vehicleID}
+  placeholder={{ label: 'Select Vehicle', value: null }}
+/>
+
 
         <Input
           label="Passengers"

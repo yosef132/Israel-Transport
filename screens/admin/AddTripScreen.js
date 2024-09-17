@@ -7,9 +7,9 @@ import DateTimePickerModal from 'react-native-modal-datetime-picker';
 const initialFormState = {
   TripName: '',
   TripType: '',
-  OpenHour: ["", "", "", "", "", "", ""],
-  CloseHour: ["", "", "", "", "", "", ""],
-  Description: ''
+  OpenHour: Array(7).fill('Closed'), // Initialize with "Closed"
+  CloseHour: Array(7).fill('Closed'), // Initialize with "Closed"
+  Description: '',
 };
 
 const AddTripScreen = () => {
@@ -41,9 +41,12 @@ const AddTripScreen = () => {
 
   const handleChange = (name, value, index) => {
     if (index !== undefined) {
-      setForm({ ...form, [name]: form[name].map((v, i) => (i === index ? value : v)) });
+      setForm((prevForm) => ({
+        ...prevForm,
+        [name]: prevForm[name].map((v, i) => (i === index ? value : v)),
+      }));
     } else {
-      setForm({ ...form, [name]: value });
+      setForm((prevForm) => ({ ...prevForm, [name]: value }));
     }
   };
 
@@ -53,8 +56,8 @@ const AddTripScreen = () => {
       return;
     }
 
-    const openHour = form.OpenHour.map((time) => time || "Closed");
-    const closeHour = form.CloseHour.map((time) => time || "Closed");
+    const openHour = form.OpenHour.map((time) => (time && time !== "" ? time : "Closed"));
+    const closeHour = form.CloseHour.map((time) => (time && time !== "" ? time : "Closed"));
 
     setLoading(true);
     try {
@@ -84,15 +87,8 @@ const AddTripScreen = () => {
       'Confirm Deletion',
       'Are you sure you want to delete this trip?',
       [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          onPress: () => handleDelete(tripId),
-          style: 'destructive',
-        },
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', onPress: () => handleDelete(tripId), style: 'destructive' },
       ],
       { cancelable: true }
     );
@@ -121,8 +117,8 @@ const AddTripScreen = () => {
     setForm({
       TripName: trip.TripName,
       TripType: trip.TripType,
-      OpenHour: Array.isArray(trip.OpenHour) ? trip.OpenHour : ["", "", "", "", "", "", ""],
-      CloseHour: Array.isArray(trip.CloseHour) ? trip.CloseHour : ["", "", "", "", "", "", ""],
+      OpenHour: Array.isArray(trip.OpenHour) ? trip.OpenHour.map((hour) => hour || 'Closed') : Array(7).fill('Closed'),
+      CloseHour: Array.isArray(trip.CloseHour) ? trip.CloseHour.map((hour) => hour || 'Closed') : Array(7).fill('Closed'),
       Description: trip.Description,
     });
     setEditingId(trip.TripID);
@@ -142,8 +138,8 @@ const AddTripScreen = () => {
   };
 
   const renderTrip = ({ item }) => {
-    const openHours = Array.isArray(item.OpenHour) ? item.OpenHour : ["Closed", "Closed", "Closed", "Closed", "Closed", "Closed", "Closed"];
-    const closeHours = Array.isArray(item.CloseHour) ? item.CloseHour : ["Closed", "Closed", "Closed", "Closed", "Closed", "Closed", "Closed"];
+    const openHours = Array.isArray(item.OpenHour) ? item.OpenHour.map((hour) => hour || 'Closed') : Array(7).fill('Closed');
+    const closeHours = Array.isArray(item.CloseHour) ? item.CloseHour.map((hour) => hour || 'Closed') : Array(7).fill('Closed');
 
     return (
       <Card style={styles.card}>
@@ -167,7 +163,7 @@ const AddTripScreen = () => {
       <View style={styles.container}>
         <FlatList
           data={trips}
-          keyExtractor={(item) => item.TripID.toString()}
+          keyExtractor={(item) => item.TripID ? item.TripID.toString() : Math.random().toString()}
           renderItem={renderTrip}
           ListEmptyComponent={() => <Paragraph style={styles.noTripsText}>No trips available</Paragraph>}
         />
@@ -196,10 +192,10 @@ const AddTripScreen = () => {
               {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, index) => (
                 <View key={day} style={styles.timeInputContainer}>
                   <Button onPress={() => showTimePicker(index, 'OpenHour')} style={styles.timePickerButton}>
-                    Open Hour ({day}): {form.OpenHour[index]}
+                    Open Hour ({day}): {form.OpenHour[index] || 'Closed'}
                   </Button>
                   <Button onPress={() => showTimePicker(index, 'CloseHour')} style={styles.timePickerButton}>
-                    Close Hour ({day}): {form.CloseHour[index]}
+                    Close Hour ({day}): {form.CloseHour[index] || 'Closed'}
                   </Button>
                 </View>
               ))}

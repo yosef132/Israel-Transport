@@ -250,7 +250,7 @@ const BookingRequestsScreen = () => {
       <FlatList
         data={bookings}
         renderItem={renderBooking}
-        keyExtractor={(item) => item.BookingID.toString()}
+        // keyExtractor={(item) => item.BookingID.toString()}
       />
       <Modal
         visible={modalVisible}

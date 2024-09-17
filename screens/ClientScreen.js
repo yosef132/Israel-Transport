@@ -15,7 +15,7 @@ const ClientScreen = () => {
   const [expandedTrip, setExpandedTrip] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const navigation = useNavigation();
-  const { user } = useContext(AuthContext); 
+  const { user } = useContext(AuthContext);
 
   useEffect(() => {
     const fetchTrips = async () => {
@@ -42,8 +42,6 @@ const ClientScreen = () => {
 
   const handleBookBus = (tripID) => {
     if (user) {
-      console.log('User:', user);
-      console.log('User Id', user.ID);
       navigation.navigate('BookABus', { tripId: tripID });
     } else {
       alert('Please log in to book a bus!');
@@ -60,13 +58,21 @@ const ClientScreen = () => {
         <Paragraph style={styles.details}>Trip category: {item.TripType}</Paragraph>
       </Card.Content>
       <Card.Actions>
-        <Button mode="contained" onPress={() => handleBookBus(item.TripID)} style={styles.bookButton}>Book a Bus</Button>
-        <Button mode="outlined" onPress={() => handleExpand(item)} style={styles.expandButton}>Expand</Button>
+        <Button
+          mode="contained"
+          onPress={() => handleBookBus(item.TripID ?? 'Unknown')} // Safely handle TripID being null
+          style={styles.bookButton}
+        >
+          Book a Bus
+        </Button>
+        <Button mode="outlined" onPress={() => handleExpand(item)} style={styles.expandButton}>
+          Expand
+        </Button>
       </Card.Actions>
     </Card>
   );
 
-  const filteredTrips = trips.filter(trip =>
+  const filteredTrips = trips.filter((trip) =>
     trip.TripType.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -89,7 +95,7 @@ const ClientScreen = () => {
       <FlatList
         data={filteredTrips}
         renderItem={renderTrip}
-        keyExtractor={(item) => item.TripID.toString()}
+        keyExtractor={(item) => (item.TripID ? item.TripID.toString() : Math.random().toString())} // Handle undefined TripID
         contentContainerStyle={styles.list}
       />
 
@@ -106,12 +112,16 @@ const ClientScreen = () => {
                   <Title style={styles.hoursTitle}>Hours</Title>
                   {expandedTrip.OpenHour.map((openHour, index) => (
                     <Paragraph key={index} style={styles.hoursText}>
-                      {`${daysOfWeek[index]}: ${openHour} - ${expandedTrip.CloseHour[index]}`}
+                      {`${daysOfWeek[index]}: ${openHour || 'Closed'} - ${
+                        expandedTrip.CloseHour[index] || 'Closed'
+                      }`}
                     </Paragraph>
                   ))}
                 </Card.Content>
                 <Card.Actions>
-                  <Button mode="contained" onPress={handleCollapse} style={styles.collapseButton}>See Less</Button>
+                  <Button mode="contained" onPress={handleCollapse} style={styles.collapseButton}>
+                    See Less
+                  </Button>
                 </Card.Actions>
               </Card>
             </View>
@@ -174,8 +184,6 @@ const styles = StyleSheet.create({
   expandButton: {
     borderColor: '#007bff',
     color: '#007bff',
-  
-
   },
   absolute: {
     position: 'absolute',
