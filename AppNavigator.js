@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -19,7 +19,8 @@ import WorkScheduleScreen from './screens/admin/WorkScheduleScreen';
 import AddTripScreen from './screens/admin/AddTripScreen';
 import EditUsersScreen from './screens/admin/EditUsersScreen';
 import EditDriversScreen from './screens/admin/EditDriversScreen';
-import { AuthProvider } from './contexts/AuthContext';
+import VerificationScreen from './screens/VerificationScreen';
+import { AuthContext } from './contexts/AuthContext';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -69,31 +70,41 @@ const AppTabs = () => (
   </Tab.Navigator>
 );
 
-const AppNavigator = () => (
-  <NavigationContainer>
-    <Stack.Navigator initialRouteName="WelcomeScreen">
-      <Stack.Screen name="WelcomeScreen" component={WelcomeScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="LoginScreen" component={LoginScreen} />
-      <Stack.Screen name="SignUpScreen" component={SignUpScreen} />
-      <Stack.Screen name="BookABusScreen" component={BookABusScreen} />
-      <Stack.Screen name="ClientScreen" component={ClientScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="AdminScreen" component={AdminMainScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="BookingRequestsScreen" component={BookingRequestsScreen} />
-      <Stack.Screen name="VehiclesScreen" component={VehiclesScreen} />
-      <Stack.Screen name="DriversScreen" component={DriversScreen} />
-      <Stack.Screen name="WorkScheduleScreen" component={WorkScheduleScreen} />
-      <Stack.Screen name="AddTripScreen" component={AddTripScreen} />
-      <Stack.Screen name="EditUsersScreen" component={EditUsersScreen} />
-      <Stack.Screen name="EditDriversScreen" component={EditDriversScreen} />
-      <Stack.Screen name="AppTabs" component={AppTabs} options={{ headerShown: false }} />
-    </Stack.Navigator>
-  </NavigationContainer>
+const AuthStack = () => (
+  <Stack.Navigator initialRouteName="WelcomeScreen">
+    <Stack.Screen name="WelcomeScreen" component={WelcomeScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="LoginScreen" component={LoginScreen} />
+    <Stack.Screen name="SignUpScreen" component={SignUpScreen} />
+    <Stack.Screen name="VerificationScreen" component={VerificationScreen} />
+  </Stack.Navigator>
 );
 
-const App = () => (
-  <AuthProvider>
-    <AppNavigator />
-  </AuthProvider>
+const AppStack = () => (
+  <Stack.Navigator>
+    <Stack.Screen name="AppTabs" component={AppTabs} options={{ headerShown: false }} />
+    <Stack.Screen name="AdminScreen" component={AdminMainScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="BookingRequestsScreen" component={BookingRequestsScreen} />
+    <Stack.Screen name="VehiclesScreen" component={VehiclesScreen} />
+    <Stack.Screen name="DriversScreen" component={DriversScreen} />
+    <Stack.Screen name="WorkScheduleScreen" component={WorkScheduleScreen} />
+    <Stack.Screen name="AddTripScreen" component={AddTripScreen} />
+    <Stack.Screen name="EditUsersScreen" component={EditUsersScreen} />
+    <Stack.Screen name="EditDriversScreen" component={EditDriversScreen} />
+  </Stack.Navigator>
 );
 
-export default App;
+const AppNavigator = () => {
+  const { user, loading } = useContext(AuthContext);
+
+  if (loading) {
+    return null; // Optional: add a loading spinner while user data is being loaded
+  }
+
+  return (
+    <NavigationContainer>
+      {user ? <AppStack /> : <AuthStack />}
+    </NavigationContainer>
+  );
+};
+
+export default AppNavigator;

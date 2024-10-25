@@ -12,6 +12,7 @@ const initialFormState = {
   Description: '',
 };
 
+
 const AddTripScreen = () => {
   const [trips, setTrips] = useState([]);
   const [form, setForm] = useState(initialFormState);

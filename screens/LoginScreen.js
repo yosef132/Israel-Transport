@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
-import { TextInput, Button, Text, Provider as PaperProvider } from 'react-native-paper';
+import { TextInput, Button, Text } from 'react-native-paper';
 import { AuthContext } from '../contexts/AuthContext';
 import axios from 'axios';
 
@@ -9,7 +9,6 @@ export default function LoginScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useContext(AuthContext);
-  const { user, logout } = useContext(AuthContext);
 
   const handleLogin = async () => {
     if (username && password) {
@@ -17,7 +16,7 @@ export default function LoginScreen({ navigation }) {
       try {
         const response = await axios.post('https://israeltransport.onrender.com/api/users/Login', {
           username,
-          password
+          password,
         });
 
         if (response.status === 200) {
@@ -26,9 +25,15 @@ export default function LoginScreen({ navigation }) {
             await login(userData);
             alert('Login successful');
             if (userData.userType === 'client') {
-              navigation.replace('AppTabs', { screen: 'Home' })
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'AppTabs' }],
+              });
             } else if (userData.userType === 'admin') {
-              navigation.replace('AdminScreen');
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'AdminScreen' }],
+              });
             } else {
               alert('Unknown user type');
             }
@@ -49,53 +54,29 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Log Out',
-      'Are you sure you want to log out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Log Out',
-          style: 'destructive',
-          onPress: () => {
-            logout();
-            navigation.replace('WelcomeScreen');
-          },
-        },
-      ],
-      { cancelable: true }
-    );
-  };
-
   return (
-    <PaperProvider>
-      <View style={styles.container}>
-        <Text style={styles.title}>Log In</Text>
-        <TextInput
-          label="Username"
-          value={username}
-          onChangeText={setUsername}
-          style={styles.input}
-          autoCapitalize="none"
-          mode="outlined"
-        />
-        <TextInput
-          label="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          style={styles.input}
-          mode="outlined"
-        />
-        <Button mode="contained" onPress={handleLogin} style={styles.button}>
-          {loading ? <ActivityIndicator color="#fff" /> : 'Log In'}
-        </Button>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Log Out</Text>
-        </TouchableOpacity>
-      </View>
-    </PaperProvider>
+    <View style={styles.container}>
+      <Text style={styles.title}>Log In</Text>
+      <TextInput
+        label="Username"
+        value={username}
+        onChangeText={setUsername}
+        style={styles.input}
+        autoCapitalize="none"
+        mode="outlined"
+      />
+      <TextInput
+        label="Password"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        style={styles.input}
+        mode="outlined"
+      />
+      <Button mode="contained" onPress={handleLogin} style={styles.button}>
+        {loading ? <ActivityIndicator color="#fff" /> : 'Log In'}
+      </Button>
+    </View>
   );
 }
 
@@ -118,13 +99,5 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingVertical: 10,
     backgroundColor: '#007AFF',
-  },
-  logoutButton: {
-    marginTop: 16,
-    alignItems: 'center',
-  },
-  logoutButtonText: {
-    color: '#007AFF',
-    fontSize: 16,
   },
 });

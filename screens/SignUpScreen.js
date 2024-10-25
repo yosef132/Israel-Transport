@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
-import { TextInput, Button, Text, Provider as PaperProvider } from 'react-native-paper';
+import { TextInput, Button, Text } from 'react-native-paper';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 
@@ -43,8 +43,9 @@ function SignUpScreen() {
       });
 
       if (response.status === 201) {
-        alert('Sign up successful');
-        navigation.navigate('LoginScreen');
+        alert('Sign up successful. Please verify your email.');
+        // Navigate to the verification screen after successful signup
+        navigation.navigate('VerificationScreen', { email });
       } else {
         alert('Sign up failed');
       }
@@ -60,7 +61,7 @@ function SignUpScreen() {
     <ScrollView>
       <View style={styles.container}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text>Back</Text>
+          <Text> Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Sign Up</Text>
         <TextInput

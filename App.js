@@ -1,6 +1,11 @@
 import React from 'react';
+import { AuthProvider } from './contexts/AuthContext';
 import AppNavigator from './AppNavigator';
 
-export default function App() {
-  return <AppNavigator />;
-}
+const App = () => (
+  <AuthProvider>
+    <AppNavigator />
+  </AuthProvider>
+);
+
+export default App;
