@@ -16,6 +16,7 @@ const ProfileScreen = ({ navigation }) => {
   const [isModalVisible, setModalVisible] = useState(false);
   const [isBugModalVisible, setBugModalVisible] = useState(false);
   const [bugMessage, setBugMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -74,9 +75,11 @@ const ProfileScreen = ({ navigation }) => {
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
       const reportData = {
-        ReportID: Math.floor(Math.random() * 1000000), // Generate a unique ReportID
+        ReportID: Math.floor(Math.random() * 1000000), 
         UserID: user.userID,
         Message: bugMessage,
         Timestamp: new Date().toISOString(), // Ensure the timestamp is in the correct format
@@ -95,6 +98,8 @@ const ProfileScreen = ({ navigation }) => {
     } catch (error) {
       console.error('Error reporting bug:', error);
       alert('An error occurred while submitting the bug report');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -118,15 +123,10 @@ const ProfileScreen = ({ navigation }) => {
   return (
     <ScrollView style={styles.container}>
       <Animatable.View animation="fadeIn" duration={1500} style={styles.card}>
-        <Image source={require('../assets/images/profile.jpg')} style={styles.profileImage} />
+        <Image source={{ uri: 'https://i.sstatic.net/l60Hf.png' }} style={styles.profileImage} />
         <View style={styles.accountDetails}>
           <Text style={styles.accountName}>{profileData.fullName}</Text>
-          <Text style={styles.accountEmail}>
-            {profileData.email}
-            <TouchableOpacity onPress={toggleModal}>
-              <Icon name="edit" size={20} color="#007AFF" />
-            </TouchableOpacity>
-          </Text>
+          <Text style={styles.accountEmail}>{profileData.email}</Text>
           <Text style={styles.accountInfo}>Language: {profileData.language}</Text>
           <Text style={styles.accountInfo}>Country: {profileData.country}</Text>
           <Text style={styles.accountInfo}>City: {profileData.city}</Text>
@@ -137,11 +137,11 @@ const ProfileScreen = ({ navigation }) => {
         <Text style={styles.sectionTitle}>PREFERENCES</Text>
         <View style={styles.preferenceItem}>
           <Text style={styles.preferenceText}>Email Notifications</Text>
-          <Switch value={emailNotifications} onValueChange={setEmailNotifications} />
+          <Switch value={emailNotifications} onValueChange={setEmailNotifications} trackColor={{ true: '#4CAF50', false: '#ccc' }} thumbColor={emailNotifications ? '#ffffff' : '#f4f3f4'} />
         </View>
         <View style={styles.preferenceItem}>
           <Text style={styles.preferenceText}>Push Notifications</Text>
-          <Switch value={pushNotifications} onValueChange={setPushNotifications} />
+          <Switch value={pushNotifications} onValueChange={setPushNotifications} trackColor={{ true: '#4CAF50', false: '#ccc' }} thumbColor={pushNotifications ? '#ffffff' : '#f4f3f4'} />
         </View>
       </Animatable.View>
 
@@ -163,7 +163,7 @@ const ProfileScreen = ({ navigation }) => {
 
       <Animatable.View animation="fadeInUp" duration={1500} delay={900} style={styles.logoutContainer}>
         <Button title="Log Out" onPress={handleLogout} buttonStyle={styles.logoutButton} />
-        <Text style={styles.appVersion}> israeltransport App Version 1.00 </Text>
+        <Text style={styles.appVersion}>israeltransport App Version 1.00</Text>
       </Animatable.View>
 
       <Modal isVisible={isModalVisible} onBackdropPress={toggleModal}>
@@ -174,7 +174,7 @@ const ProfileScreen = ({ navigation }) => {
               Welcome to Israel Transport! Your privacy is important to us. Our terms and privacy policies ensure that your data is safe and secure. We collect minimal personal information and use it solely for improving your experience with our app. Please read through our detailed terms and privacy policies to understand how we handle your information.
             </Text>
           </ScrollView>
-          <Button title="Close" onPress={toggleModal} />
+          <Button title="Close" onPress={toggleModal} buttonStyle={styles.modalButton} />
         </View>
       </Modal>
 
@@ -187,10 +187,14 @@ const ProfileScreen = ({ navigation }) => {
             onChangeText={setBugMessage}
             multiline
             numberOfLines={4}
-            style={styles.bugInput}
+            inputStyle={styles.bugInput}
           />
-          <Button title="Submit" onPress={handleReportBug} />
-          <Button title="Cancel" onPress={toggleBugModal} />
+          {isSubmitting ? (
+            <ActivityIndicator size="large" color="#007AFF" />
+          ) : (
+            <Button title="Submit" onPress={handleReportBug} buttonStyle={styles.modalButton} />
+          )}
+          <Button title="Cancel" onPress={toggleBugModal} buttonStyle={[styles.modalButton, { backgroundColor: '#cccccc' }]} />
         </View>
       </Modal>
     </ScrollView>
@@ -200,7 +204,7 @@ const ProfileScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#f0f0f0',
     padding: 16,
   },
   loadingContainer: {
@@ -218,53 +222,54 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 24,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     padding: 20,
-    borderRadius: 10,
+    borderRadius: 15,
     shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
     shadowRadius: 8,
     elevation: 5,
   },
   profileImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     marginRight: 16,
   },
   accountDetails: {
     flex: 1,
   },
   accountName: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'bold',
+    color: '#333',
   },
   accountEmail: {
     fontSize: 16,
-    color: '#888',
+    color: '#777',
     marginBottom: 4,
   },
   accountInfo: {
     fontSize: 16,
-    color: '#888',
+    color: '#777',
   },
   preferencesContainer: {
     marginBottom: 24,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     padding: 20,
-    borderRadius: 10,
+    borderRadius: 15,
     shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
     shadowRadius: 8,
     elevation: 5,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#aaa',
-    marginBottom: 8,
+    color: '#333',
+    marginBottom: 16,
   },
   preferenceItem: {
     flexDirection: 'row',
@@ -276,41 +281,44 @@ const styles = StyleSheet.create({
   },
   preferenceText: {
     fontSize: 16,
+    color: '#555',
   },
   resourcesContainer: {
     marginBottom: 24,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     padding: 20,
-    borderRadius: 10,
+    borderRadius: 15,
     shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
     shadowRadius: 8,
     elevation: 5,
   },
   resourceItem: {
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
   resourceText: {
     fontSize: 16,
+    color: 'black',
   },
   logoutContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     padding: 20,
-    borderRadius: 10,
+    borderRadius: 15,
     shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
     shadowRadius: 8,
     elevation: 5,
     alignItems: 'center',
   },
   logoutButton: {
     backgroundColor: '#ff3b30',
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 20,
+    paddingVertical: 10,
   },
   appVersion: {
     fontSize: 14,
@@ -323,27 +331,37 @@ const styles = StyleSheet.create({
     padding: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 4,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   modalText: {
     fontSize: 16,
-    color: '#888',
+    color: '#555',
     marginBottom: 20,
   },
   bugInput: {
     height: 100,
     width: '100%',
-    borderColor: 'gray',
+    borderColor: '#ddd',
     borderWidth: 1,
-    borderRadius: 4,
+    borderRadius: 8,
     padding: 10,
     marginBottom: 20,
+    backgroundColor: '#f9f9f9',
+  },
+  modalButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+    marginVertical: 10,
+    paddingHorizontal: 20,
   },
 });
 

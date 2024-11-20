@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { View, StyleSheet, ScrollView, ImageBackground } from 'react-native';
 import { Button, Text } from 'react-native-elements';
+import { AuthContext } from '../../contexts/AuthContext';
 
 const AdminMainScreen = ({ navigation }) => {
+  const { logout } = useContext(AuthContext);
+
   return (
     <ImageBackground 
       source={{ uri: 'https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?fit=crop&w=1500&q=80' }} 
@@ -12,7 +15,7 @@ const AdminMainScreen = ({ navigation }) => {
         <Text h3 style={styles.title}>Admin Dashboard</Text>
         <Button 
           title="Booking Requests" 
-          onPress={() => navigation.navigate('BookingRequestsScreen')}
+          onPress={() => navigation.navigate('Booking Requests Screen')}
           buttonStyle={styles.button}
           titleStyle={styles.buttonTitle}
         />
@@ -23,13 +26,13 @@ const AdminMainScreen = ({ navigation }) => {
           titleStyle={styles.buttonTitle}
         />
         <Button 
-          title="Drivers" 
-          onPress={() => navigation.navigate('DriversScreen')}
+          title="Schedule" 
+          onPress={() => navigation.navigate('Schedule')}
           buttonStyle={styles.button}
           titleStyle={styles.buttonTitle}
         />
         <Button 
-          title="Work Schedule" 
+          title="Add work schedule" 
           onPress={() => navigation.navigate('WorkScheduleScreen')}
           buttonStyle={styles.button}
           titleStyle={styles.buttonTitle}
@@ -50,6 +53,12 @@ const AdminMainScreen = ({ navigation }) => {
           title="Edit Drivers" 
           onPress={() => navigation.navigate('EditDriversScreen')}
           buttonStyle={styles.button}
+          titleStyle={styles.buttonTitle}
+        />
+        <Button 
+          title="Logout" 
+          onPress={logout}
+          buttonStyle={[styles.button, styles.logoutButton]}
           titleStyle={styles.buttonTitle}
         />
       </ScrollView>
@@ -81,6 +90,9 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     backgroundColor: '#1E90FF',
     borderRadius: 30,
+  },
+  logoutButton: {
+    backgroundColor: '#FF4500', 
   },
   buttonTitle: {
     fontSize: 18,

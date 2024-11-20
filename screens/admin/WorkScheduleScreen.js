@@ -1,221 +1,190 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
-import { TextInput, Button, Text, Provider as PaperProvider, Modal } from 'react-native-paper';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, Text, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import axios from 'axios';
-import { useNavigation } from '@react-navigation/native';
+import { Calendar } from 'react-native-calendars';
+import { Button, Modal, Portal, Provider as PaperProvider } from 'react-native-paper';
+import RNPickerSelect from 'react-native-picker-select';
+import { LinearGradient } from 'expo-linear-gradient';
 
-function SignUpScreen() {
-  const [fullName, setFullName] = useState('');
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [language, setLanguage] = useState('');
-  const [country, setCountry] = useState('');
-  const [city, setCity] = useState('');
+const WorkScheduleScreen = () => {
+  const [selectedDate, setSelectedDate] = useState('');
+  const [bookings, setBookings] = useState([]);
+  const [drivers, setDrivers] = useState([]);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [selectedDriver, setSelectedDriver] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [isModalVisible, setModalVisible] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
-  const navigation = useNavigation();
+  const [modalVisible, setModalVisible] = useState(false);
 
-  const handleSignUp = async () => {
-    if (!fullName || !username || !email || !password || !confirmPassword || !language || !country || !city) {
-      alert('Please fill in all fields');
-      return;
-    }
+  useEffect(() => {
+    fetchBookings();
+    fetchDrivers();
+  }, []);
 
-    if (password !== confirmPassword) {
-      alert('Passwords do not match');
-      return;
-    }
-
-    setLoading(true);
-
+  const fetchBookings = async () => {
     try {
-      const response = await axios.post('https://israeltransport.onrender.com/api/users/SignUp', {
-        fullName,
-        username,
-        email,
-        password,
-        language,
-        country,
-        city,
-        userTypeID: 2,
-        userType: 'Client', 
-      });
-
-      if (response.status === 201) {
-        alert('Sign up successful. A verification code has been sent to your email.');
-        setModalVisible(true); // Show modal to verify code
-      } else {
-        alert('Sign up failed');
-      }
+      const response = await axios.get('https://israeltransport.onrender.com/api/bookings');
+      setBookings(response.data.filter((booking) => booking.status === 'Confirmed'));
     } catch (error) {
-      console.error('Error signing up:', error);
-      alert('Sign up failed: ' + (error.response?.data?.message || error.message));
-    } finally {
-      setLoading(false);
+      console.error('Error fetching bookings:', error);
     }
   };
 
-  const handleVerifyCode = async () => {
-    if (!verificationCode) {
-      alert('Please enter the verification code');
+  const fetchDrivers = async () => {
+    try {
+      const response = await axios.get('https://israeltransport.onrender.com/api/drivers/GetAllDrivers');
+      setDrivers(response.data);
+    } catch (error) {
+      console.error('Error fetching drivers:', error);
+    }
+  };
+
+  const handleDayPress = (day) => {
+    setSelectedDate(day.dateString);
+    setModalVisible(true);
+  };
+
+  const handleCreateSchedule = async () => {
+    if (!selectedDate || !selectedBooking || !selectedDriver) {
+      Alert.alert('Validation Error', 'Please select a booking, a driver, and a date.');
       return;
     }
 
     setLoading(true);
 
     try {
-      const response = await axios.post('https://israeltransport.onrender.com/api/users/verify-code', {
-        email,
-        verificationCode,
-      });
+      const scheduleData = {
+        assignedDate: `${selectedDate}T09:00:00Z`,
+        tripID: selectedBooking,
+        driverID: selectedDriver,
+      };
 
-      if (response.status === 200) {
-        alert('Verification successful. Welcome!');
+      const response = await axios.post('https://israeltransport.onrender.com/api/schedule/CreateSchedule', scheduleData);
+
+      if (response.status === 201) {
+        Alert.alert('Success', 'Schedule created successfully');
         setModalVisible(false);
-        navigation.navigate('LoginScreen');
+        setSelectedBooking(null);
+        setSelectedDriver(null);
       } else {
-        alert('Verification failed. Please check the code and try again.');
+        Alert.alert('Error', 'Failed to create schedule');
       }
     } catch (error) {
-      console.error('Error verifying code:', error);
-      alert('Verification failed: ' + (error.response?.data?.message || error.message));
+      console.error('Error creating schedule:', error);
+      Alert.alert('Error', 'Failed to create schedule');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <ScrollView>
-      <View style={styles.container}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text>Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Sign Up</Text>
-        <TextInput
-          label="Full Name"
-          value={fullName}
-          onChangeText={setFullName}
-          style={styles.input}
-          mode="outlined"
-        />
-        <TextInput
-          label="Username"
-          value={username}
-          onChangeText={setUsername}
-          style={styles.input}
-          mode="outlined"
-        />
-        <TextInput
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          style={styles.input}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          mode="outlined"
-        />
-        <TextInput
-          label="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          style={styles.input}
-          mode="outlined"
-        />
-        <TextInput
-          label="Confirm Password"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-          style={styles.input}
-          mode="outlined"
-        />
-        <TextInput
-          label="Language"
-          value={language}
-          onChangeText={setLanguage}
-          style={styles.input}
-          mode="outlined"
-        />
-        <TextInput
-          label="Country"
-          value={country}
-          onChangeText={setCountry}
-          style={styles.input}
-          mode="outlined"
-        />
-        <TextInput
-          label="City"
-          value={city}
-          onChangeText={setCity}
-          style={styles.input}
-          mode="outlined"
-        />
-        <Button mode="contained" onPress={handleSignUp} style={styles.button}>
-          {loading ? <ActivityIndicator color="#fff" /> : 'Sign Up'}
-        </Button>
+    <PaperProvider>
+      <LinearGradient colors={['#6dd5ed', '#2193b0']} style={styles.linearGradient}>
+        <ScrollView contentContainerStyle={styles.container}>
+          <Calendar style={styles.calendar}
+            onDayPress={handleDayPress}
+            markedDates={{
+              [selectedDate]: { selected: true, marked: true, selectedColor: '#FF6347' },
+            }}
+            theme={{
+              arrowColor: '#FF6347',
+              todayTextColor: '#FF6347',
+              selectedDayBackgroundColor: '#FF6347',
+              selectedDayTextColor: '#ffffff',
+              monthTextColor: '#FF6347',
+              textMonthFontWeight: 'bold',
+              textDayHeaderFontWeight: 'bold',
+            }}
+          />
 
-        {/* Modal for Verification Code */}
-        <Modal visible={isModalVisible} onDismiss={() => setModalVisible(false)} contentContainerStyle={styles.modalContainer}>
-          <View>
-            <Text style={styles.modalTitle}>Enter Verification Code</Text>
-            <TextInput
-              label="Verification Code"
-              value={verificationCode}
-              onChangeText={setVerificationCode}
-              style={styles.input}
-              mode="outlined"
-              keyboardType="number-pad"
-            />
-            <Button mode="contained" onPress={handleVerifyCode} style={styles.button}>
-              {loading ? <ActivityIndicator color="#fff" /> : 'Verify Code'}
-            </Button>
-          </View>
-        </Modal>
-      </View>
-    </ScrollView>
+          <Portal>
+            <Modal visible={modalVisible} onDismiss={() => setModalVisible(false)} contentContainerStyle={styles.modalContainer}>
+              <Text style={styles.modalTitle}>Create Schedule</Text>
+
+              <RNPickerSelect
+                onValueChange={(value) => setSelectedBooking(value)}
+                items={bookings.map((booking) => ({ label: booking.FullName, value: booking.BookingID }))}
+                placeholder={{ label: 'Select a Booking', value: null }}
+                style={pickerSelectStyles}
+                value={selectedBooking}
+              />
+
+              <RNPickerSelect
+                onValueChange={(value) => setSelectedDriver(value)}
+                items={drivers.map((driver) => ({ label: driver.fullName, value: driver.userID }))}
+                placeholder={{ label: 'Select a Driver', value: null }}
+                style={pickerSelectStyles}
+                value={selectedDriver}
+              />
+
+              <Button mode="contained" onPress={handleCreateSchedule} disabled={loading} style={styles.button}>
+                {loading ? <ActivityIndicator color="#fff" /> : 'Create Schedule'}
+              </Button>
+            </Modal>
+          </Portal>
+        </ScrollView>
+      </LinearGradient>
+    </PaperProvider>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  container: {
+  calendar: {
+    borderRadius: 9,
+  },
+  linearGradient: {
     flex: 1,
-    justifyContent: 'center',
+  },
+  container: {
+    flexGrow: 1,
     padding: 20,
-    backgroundColor: '#ffffff',
-  },
-  backButton: {
-    position: 'absolute',
-    top: 40,
-    left: 20,
-  },
-  title: {
-    fontSize: 24,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  input: {
-    marginBottom: 16,
-  },
-  button: {
-    marginTop: 16,
-    paddingVertical: 10,
-    backgroundColor: '#007AFF',
   },
   modalContainer: {
     backgroundColor: 'white',
     padding: 20,
-    margin: 20,
-    borderRadius: 10,
-    alignItems: 'center',
+    marginHorizontal: 20,
+    borderRadius: 15,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  button: {
+    marginTop: 16,
+    backgroundColor: '#FF6347',
+    paddingVertical: 10,
+  },
+});
+
+const pickerSelectStyles = StyleSheet.create({
+  inputIOS: {
+    fontSize: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: 'gray',
+    borderRadius: 4,
+    color: 'black',
+    paddingRight: 30,
+    marginBottom: 16,
+  },
+  inputAndroid: {
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 0.5,
+    borderColor: 'gray',
+    borderRadius: 4,
+    color: 'black',
+    paddingRight: 30,
     marginBottom: 16,
   },
 });
 
-export default SignUpScreen;
+export default WorkScheduleScreen;

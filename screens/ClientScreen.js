@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, StyleSheet, FlatList, TextInput, Modal, Text, Dimensions } from 'react-native';
+import { View, StyleSheet, FlatList, ScrollView, TextInput, Modal, Text, Dimensions, TouchableOpacity, ImageBackground } from 'react-native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { Card, Button, Title, Paragraph } from 'react-native-paper';
 import { BlurView } from 'expo-blur';
 import { AuthContext } from '../contexts/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -21,7 +22,7 @@ const ClientScreen = () => {
     const fetchTrips = async () => {
       try {
         const response = await axios.get('https://israeltransport.onrender.com/api/trips/GetAllTrips');
-        setTrips(response.data);
+        setTrips(response.data.sort((a, b) => a.TripType.localeCompare(b.TripType)));
         setLoading(false);
       } catch (error) {
         console.error('Error fetching trips:', error);
@@ -42,7 +43,7 @@ const ClientScreen = () => {
 
   const handleBookBus = (tripID) => {
     if (user) {
-      navigation.navigate('BookABus', { tripId: tripID });
+      navigation.navigate('Book A Bus', { tripId: tripID });
     } else {
       alert('Please log in to book a bus!');
       navigation.navigate('WelcomeScreen');
@@ -50,61 +51,84 @@ const ClientScreen = () => {
   };
 
   const renderTrip = ({ item }) => (
-    <Card style={styles.tripCard} onPress={() => handleExpand(item)}>
-      <Card.Cover source={require('../assets/images/trip1.jpg')} style={styles.image} />
-      <Card.Content>
-        <Title style={styles.title}>{item.TripName}</Title>
-        <Paragraph style={styles.description}>{item.Description}</Paragraph>
-        <Paragraph style={styles.details}>Trip category: {item.TripType}</Paragraph>
-      </Card.Content>
-      <Card.Actions>
-        <Button
-          mode="contained"
-          onPress={() => handleBookBus(item.TripID ?? 'Unknown')} // Safely handle TripID being null
-          style={styles.bookButton}
-        >
-          Book a Bus
-        </Button>
-        <Button mode="outlined" onPress={() => handleExpand(item)} style={styles.expandButton}>
-          Expand
-        </Button>
-      </Card.Actions>
-    </Card>
+    <TouchableOpacity style={styles.cardContainer} onPress={() => handleExpand(item)}>
+      <Card style={styles.tripCard}>
+        {item.ImageURL ? (
+          <Card.Cover source={{ uri: item.ImageURL }} style={styles.image} />
+        ) : (
+          <Card.Cover source={require('../assets/images/trip1.jpg')} style={styles.image} />
+        )}
+        <Card.Content>
+          <Title style={styles.title}>{item.TripName}</Title>
+          <Paragraph style={styles.description}>{item.Description}</Paragraph>
+        </Card.Content>
+      </Card>
+    </TouchableOpacity>
   );
 
   const filteredTrips = trips.filter((trip) =>
-    trip.TripType.toLowerCase().includes(searchTerm.toLowerCase())
+    trip.TripName.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const groupedTrips = filteredTrips.reduce((acc, trip) => {
+    const { TripType } = trip;
+    if (!acc[TripType]) {
+      acc[TripType] = [];
+    }
+    acc[TripType].push(trip);
+    return acc;
+  }, {});
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={styles.loadingContainer}>
         <Text>Loading...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Search by category"
-        value={searchTerm}
-        onChangeText={setSearchTerm}
-      />
-      <FlatList
-        data={filteredTrips}
-        renderItem={renderTrip}
-        keyExtractor={(item) => (item.TripID ? item.TripID.toString() : Math.random().toString())} // Handle undefined TripID
-        contentContainerStyle={styles.list}
-      />
+    <ScrollView style={styles.scrollContainer}>
+      <View style={styles.headerContainer}>
+        <ImageBackground source={{ uri: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80' }} style={styles.backgroundImage}>
+          <Text style={styles.headerTitle}>Israel Transport</Text>
+          <Text style={styles.headerSubtitle}>Explore the world with us</Text>
+          <View style={styles.searchContainerOverlay}>
+            <Ionicons name="search" size={20} color="#6c757d" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Choose your destination"
+              value={searchTerm}
+              onChangeText={setSearchTerm}
+            />
+          </View>
+        </ImageBackground>
+      </View>
+
+      {Object.keys(groupedTrips).map((tripType) => (
+        <View key={tripType} style={[styles.sectionContainer, styles.sectionContainerWithRadius]}>
+          <Text style={styles.sectionTitle}>{tripType}</Text>
+          <FlatList
+            data={groupedTrips[tripType]}
+            renderItem={renderTrip}
+            keyExtractor={(item) => (item.TripID ? item.TripID.toString() : Math.random().toString())}
+            contentContainerStyle={styles.list}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+          />
+        </View>
+      ))}
 
       {expandedTrip && (
         <Modal visible={true} transparent={true} animationType="slide">
-          <BlurView intensity={210} style={styles.absolute}>
+          <BlurView intensity={250} style={styles.absolute}>
             <View style={styles.modalContainer}>
               <Card style={styles.expandedCard}>
-                <Card.Cover source={require('../assets/images/trip1.jpg')} style={styles.expandedImage} />
+                {expandedTrip.ImageURL ? (
+                  <Card.Cover source={{ uri: expandedTrip.ImageURL }} style={styles.expandedImage} />
+                ) : (
+                  <Card.Cover source={require('../assets/images/trip1.jpg')} style={styles.expandedImage} />
+                )}
                 <Card.Content>
                   <Title style={styles.expandedTitle}>{expandedTrip.TripName}</Title>
                   <Paragraph style={styles.expandedDescription}>{expandedTrip.Description}</Paragraph>
@@ -128,37 +152,88 @@ const ClientScreen = () => {
           </BlurView>
         </Modal>
       )}
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
+  scrollContainer: {
+    flex: 2,
+  },
+  backgroundImage: {
+    flex: 1,
+    resizeMode: 'cover',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 110,
+  },
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#f8f9fa',
   },
-  list: {
-    paddingBottom: 16,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerContainer: {
+    paddingBottom: 40,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    overflow: 'hidden',
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 10,
+    fontFamily: 'serif',
+  },
+  headerSubtitle: {
+    fontSize: 20,
+    color: '#ffffff',
+    textAlign: 'center',
+    marginTop: 5,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 10,
+    fontFamily: 'serif',
+  },
+  searchContainerOverlay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 25,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    marginTop: 20,
+    width: '90%',
+    elevation: 5,
   },
   searchInput: {
-    height: 40,
-    borderColor: '#6c757d',
-    borderWidth: 1,
-    paddingLeft: 8,
-    marginBottom: 16,
-    borderRadius: 8,
-    backgroundColor: '#fff',
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 16,
+  },
+  list: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  cardContainer: {
+    marginRight: 15,
   },
   tripCard: {
     borderRadius: 15,
-    marginBottom: 66,
+    width: width * 0.7,
     elevation: 4,
     backgroundColor: '#ffffff',
   },
   image: {
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
+    height: 150,
   },
   title: {
     fontSize: 18,
@@ -171,19 +246,20 @@ const styles = StyleSheet.create({
     color: '#6c757d',
     marginBottom: 8,
   },
-  details: {
-    fontSize: 12,
-    color: '#adb5bd',
-    marginBottom: 8,
+  sectionContainer: {
+    marginBottom: 20,
   },
-  bookButton: {
-    marginRight: 8,
-    backgroundColor: '#007bff',
-    color: '#fff',
+  sectionContainerWithRadius: {
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    overflow: 'hidden',
   },
-  expandButton: {
-    borderColor: '#007bff',
-    color: '#007bff',
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#343a40',
+    marginHorizontal: 20,
+    marginBottom: 10,
   },
   absolute: {
     position: 'absolute',

@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
+import DriverScreen from './screens/DriverScreen';
 import WelcomeScreen from './screens/WelcomeScreen';
 import LoginScreen from './screens/LoginScreen';
 import SignUpScreen from './screens/SignUpScreen';
@@ -14,7 +14,7 @@ import SearchScreen from './screens/SearchScreen';
 import AdminMainScreen from './screens/admin/AdminMainScreen';
 import BookingRequestsScreen from './screens/admin/BookingRequestsScreen';
 import VehiclesScreen from './screens/admin/VehiclesScreen';
-import DriversScreen from './screens/admin/DriversScreen';
+import Schedule from './screens/admin/Schedule';
 import WorkScheduleScreen from './screens/admin/WorkScheduleScreen';
 import AddTripScreen from './screens/admin/AddTripScreen';
 import EditUsersScreen from './screens/admin/EditUsersScreen';
@@ -25,38 +25,22 @@ import { AuthContext } from './contexts/AuthContext';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-const HomeStackScreen = () => (
-  <Stack.Navigator>
-    <Stack.Screen name="ClientScreen" component={ClientScreen} options={{ headerShown: false }} />
-    <Stack.Screen name="BookABus" component={BookABusScreen} />
-  </Stack.Navigator>
-);
-
-const ProfileStackScreen = () => (
-  <Stack.Navigator>
-    <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
-  </Stack.Navigator>
-);
-
-const SearchStackScreen = () => (
-  <Stack.Navigator>
-    <Stack.Screen name="SearchScreen" component={SearchScreen} />
-  </Stack.Navigator>
-);
-
-const AppTabs = () => (
+const ClientTabNavigator = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
       tabBarIcon: ({ color, size }) => {
         let iconName;
 
         if (route.name === 'Home') {
-          iconName = 'home-outline';
+          iconName = 'home';
         } else if (route.name === 'Search') {
-          iconName = 'search-outline';
+          iconName = 'search';
         } else if (route.name === 'Profile') {
-          iconName = 'person-outline';
+          iconName = 'person';
         }
+       else if (route.name === 'Book A Bus') {
+        iconName = 'bus-outline';
+      }
 
         return <Ionicons name={iconName} size={size} color={color} />;
       },
@@ -64,13 +48,28 @@ const AppTabs = () => (
       tabBarInactiveTintColor: 'gray',
     })}
   >
-    <Tab.Screen name="Home" component={HomeStackScreen} />
-    <Tab.Screen name="Search" component={SearchStackScreen} />
-    <Tab.Screen name="Profile" component={ProfileStackScreen} />
+    <Tab.Screen name="Home" component={ClientScreen}  options={{ headerShown: false }} />
+    <Tab.Screen name="Search" component={SearchScreen} />
+    <Tab.Screen name="Profile" component={ProfileScreen} />
+    <Tab.Screen name="Book A Bus" component={BookABusScreen} />
+    
   </Tab.Navigator>
 );
 
-const AuthStack = () => (
+const AdminStackNavigator = () => (
+  <Stack.Navigator>
+    <Stack.Screen name="AdminMainScreen" component={AdminMainScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="Booking Requests Screen" component={BookingRequestsScreen}  />
+    <Stack.Screen name="VehiclesScreen" component={VehiclesScreen} />
+    <Stack.Screen name="Schedule" component={Schedule} />
+    <Stack.Screen name="WorkScheduleScreen" component={WorkScheduleScreen} />
+    <Stack.Screen name="AddTripScreen" component={AddTripScreen} />
+    <Stack.Screen name="EditUsersScreen" component={EditUsersScreen} />
+    <Stack.Screen name="EditDriversScreen" component={EditDriversScreen} />
+  </Stack.Navigator>
+);
+
+const AuthStackNavigator = () => (
   <Stack.Navigator initialRouteName="WelcomeScreen">
     <Stack.Screen name="WelcomeScreen" component={WelcomeScreen} options={{ headerShown: false }} />
     <Stack.Screen name="LoginScreen" component={LoginScreen} />
@@ -78,18 +77,9 @@ const AuthStack = () => (
     <Stack.Screen name="VerificationScreen" component={VerificationScreen} />
   </Stack.Navigator>
 );
-
-const AppStack = () => (
+const DriverStackNavigator = () => (
   <Stack.Navigator>
-    <Stack.Screen name="AppTabs" component={AppTabs} options={{ headerShown: false }} />
-    <Stack.Screen name="AdminScreen" component={AdminMainScreen} options={{ headerShown: false }} />
-    <Stack.Screen name="BookingRequestsScreen" component={BookingRequestsScreen} />
-    <Stack.Screen name="VehiclesScreen" component={VehiclesScreen} />
-    <Stack.Screen name="DriversScreen" component={DriversScreen} />
-    <Stack.Screen name="WorkScheduleScreen" component={WorkScheduleScreen} />
-    <Stack.Screen name="AddTripScreen" component={AddTripScreen} />
-    <Stack.Screen name="EditUsersScreen" component={EditUsersScreen} />
-    <Stack.Screen name="EditDriversScreen" component={EditDriversScreen} />
+    <Stack.Screen name="DriverScreen" component={DriverScreen} options={{ headerShown: false }} />
   </Stack.Navigator>
 );
 
@@ -102,9 +92,20 @@ const AppNavigator = () => {
 
   return (
     <NavigationContainer>
-      {user ? <AppStack /> : <AuthStack />}
+      {user ? (
+        user.userType === 'admin' ? (
+          <AdminStackNavigator />
+        ) : user.userType === 'Driver' ? (
+          <DriverStackNavigator />
+        ) : (
+          <ClientTabNavigator />
+        )
+      ) : (
+        <AuthStackNavigator />
+      )}
     </NavigationContainer>
   );
+  
 };
 
 export default AppNavigator;

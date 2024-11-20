@@ -8,13 +8,11 @@ import { AuthContext } from '../contexts/AuthContext';
 
 const BookABusScreen = ({ route, navigation }) => {
   const { user } = useContext(AuthContext);
-  const { tripId } = route.params;
+  const tripId = route?.params?.tripId || null; // Handle undefined params safely
 
   const [formData, setFormData] = useState({
     bookingTypeID: 1,
-    vehicleID: '',
     status: 'Pending',
-    departureTime: new Date(),
     startTrailDate: new Date(),
     endTrailDate: new Date(),
     passengers: '',
@@ -26,33 +24,15 @@ const BookABusScreen = ({ route, navigation }) => {
     stopStations: '',
     notes: ''
   });
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showStartTrailPicker, setShowStartTrailPicker] = useState(false);
   const [showEndTrailPicker, setShowEndTrailPicker] = useState(false);
-  const [vehicles, setVehicles] = useState([]);
   const [bookingTypes, setBookingTypes] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    // Fetch available vehicles and booking types
-    const fetchVehicles = async () => {
-      setLoading(true);
-      try {
-        const response = await axios.get('https://israeltransport.onrender.com/api/vehicles/GetAllVehicles');
-        if (response.data && Array.isArray(response.data)) {
-          setVehicles(response.data);
-        } else {
-          console.error('Unexpected data format:', response.data);
-          Alert.alert('Error', 'Failed to load vehicles data. Please try again.');
-        }
-      } catch (error) {
-        console.error('Error fetching vehicles:', error);
-        Alert.alert('Error', 'Failed to fetch vehicles');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const today = new Date();
 
+  useEffect(() => {
+    // Fetch available booking types
     const fetchBookingTypes = async () => {
       try {
         const response = await axios.get('https://israeltransport.onrender.com/api/bookingtypes/GetAllBookingTypes');
@@ -62,7 +42,6 @@ const BookABusScreen = ({ route, navigation }) => {
       }
     };
 
-    fetchVehicles();
     fetchBookingTypes();
   }, []);
 
@@ -71,16 +50,17 @@ const BookABusScreen = ({ route, navigation }) => {
   };
 
   const handleDateChange = (event, selectedDate, field) => {
-    const currentDate = selectedDate || formData[field];
-    if (field === 'departureTime') setShowDatePicker(false);
+    if (selectedDate) {
+      const currentDate = selectedDate || formData[field];
+      setFormData({ ...formData, [field]: currentDate });
+    }
     if (field === 'startTrailDate') setShowStartTrailPicker(false);
     if (field === 'endTrailDate') setShowEndTrailPicker(false);
-    setFormData({ ...formData, [field]: currentDate });
   };
 
   const handleSubmit = async () => {
     if (!user || !user.userID) {
-      navigation.navigate('WelcomeScreen');
+      navigation.navigate('Home');
       return;
     }
 
@@ -89,9 +69,7 @@ const BookABusScreen = ({ route, navigation }) => {
     const bookingData = {
       BookingID: Math.floor(Math.random() * 1000000), // Generate a unique BookingID
       UserID: user.userID,
-      VehicleID: parseInt(formData.vehicleID, 10),
       status: formData.status,
-      DepartureTime: formData.departureTime.toISOString(),
       startTrailDate: formData.startTrailDate.toISOString(),
       endTrailDate: formData.endTrailDate.toISOString(),
       Passengers: parseInt(formData.passengers, 10),
@@ -104,20 +82,35 @@ const BookABusScreen = ({ route, navigation }) => {
       notes: formData.notes
     };
 
-    console.log('Booking Data:', bookingData); // Log the booking data for debugging
-
     try {
       const response = await axios.post('https://israeltransport.onrender.com/api/bookings/create', bookingData);
 
       if (response.status === 201) {
-        alert('Booking successfully created!');
-        navigation.navigate('ClientScreen');
+        Alert.alert(
+          'Booking Successful',
+          'Your booking has been successfully created!',
+          [
+            { text: 'OK', onPress: () => navigation.navigate('ClientScreen') }
+          ]
+        );
       } else {
-        alert('Failed to create booking');
+        Alert.alert(
+          'Booking Failed',
+          'Failed to create booking. Please try again later.',
+          [
+            { text: 'OK' }
+          ]
+        );
       }
     } catch (error) {
       console.error('Error creating booking:', error);
-      alert('An error occurred while creating the booking');
+      Alert.alert(
+        'Error',
+        'An error occurred while creating the booking. Please check your details and try again.',
+        [
+          { text: 'OK' }
+        ]
+      );
     } finally {
       setLoading(false);
     }
@@ -138,38 +131,12 @@ const BookABusScreen = ({ route, navigation }) => {
           placeholder={{ label: 'Select Booking Type', value: null }}
         />
 
-     <RNPickerSelect
-  onValueChange={(value) => handleChange('vehicleID', value)}
-  items={vehicles.map((vehicle) => ({
-    label: `${vehicle.Make} ${vehicle.Model} (${vehicle.carPlateNumber})`,
-    value: vehicle.VehicleID,
-  }))}
-  style={pickerSelectStyles}
-  value={formData.vehicleID}
-  placeholder={{ label: 'Select Vehicle', value: null }}
-/>
-
-
         <Input
           label="Passengers"
           value={formData.passengers}
           onChangeText={(text) => handleChange('passengers', text)}
-          style={styles.input}
-          keyboardType="numeric"
+          style={[styles.input, { borderBottomWidth: 0 }]}          keyboardType="numeric"
         />
-
-        <TouchableOpacity style={styles.datePicker} onPress={() => setShowDatePicker(true)}>
-          <Text style={styles.dateText}>Departure Time: {formData.departureTime.toDateString()}</Text>
-          <Icon name="calendar" type="font-awesome" color="#007AFF" />
-        </TouchableOpacity>
-        {showDatePicker && (
-          <DateTimePicker
-            value={formData.departureTime}
-            mode="date"
-            display="default"
-            onChange={(event, date) => handleDateChange(event, date, 'departureTime')}
-          />
-        )}
 
         <TouchableOpacity style={styles.datePicker} onPress={() => setShowStartTrailPicker(true)}>
           <Text style={styles.dateText}>Start Trail Date: {formData.startTrailDate.toDateString()}</Text>
@@ -181,6 +148,7 @@ const BookABusScreen = ({ route, navigation }) => {
             mode="date"
             display="default"
             onChange={(event, date) => handleDateChange(event, date, 'startTrailDate')}
+            minimumDate={today}
           />
         )}
 
@@ -194,52 +162,53 @@ const BookABusScreen = ({ route, navigation }) => {
             mode="date"
             display="default"
             onChange={(event, date) => handleDateChange(event, date, 'endTrailDate')}
+            minimumDate={today}
           />
         )}
 
         <Input
-          label="Pick up address"
+          label="Pick Up Address"
           value={formData.pickupAddress}
           onChangeText={(text) => handleChange('pickupAddress', text)}
-          style={styles.input}
+          style={[styles.input, { borderBottomWidth: 0 }]}
         />
         <Input
-          label="Drop off address"
+          label="Drop Off Address"
           value={formData.dropoffAddress}
           onChangeText={(text) => handleChange('dropoffAddress', text)}
-          style={styles.input}
+          style={[styles.input, { borderBottomWidth: 0 }]}
         />
         <Input
-          label="Full name"
+          label="Full Name"
           value={formData.fullName}
           onChangeText={(text) => handleChange('fullName', text)}
-          style={styles.input}
+          style={[styles.input, { borderBottomWidth: 0 }]}
         />
         <Input
           label="Email"
           value={formData.email}
           onChangeText={(text) => handleChange('email', text)}
-          style={styles.input}
+          style={[styles.input, { borderBottomWidth: 0 }]}
           keyboardType="email-address"
         />
         <Input
           label="Phone"
           value={formData.phone}
           onChangeText={(text) => handleChange('phone', text)}
-          style={styles.input}
+          style={[styles.input, { borderBottomWidth: 0 }]}
           keyboardType="phone-pad"
         />
         <Input
           label="Stop Stations (comma separated)"
           value={formData.stopStations}
           onChangeText={(text) => handleChange('stopStations', text)}
-          style={styles.input}
+          style={[styles.input, { borderBottomWidth: 0 }]}
         />
         <Input
           label="Notes"
           value={formData.notes}
           onChangeText={(text) => handleChange('notes', text)}
-          style={styles.input}
+          style={[styles.input, { borderBottomWidth: 0 }]}
         />
 
         <Button
@@ -247,6 +216,7 @@ const BookABusScreen = ({ route, navigation }) => {
           onPress={handleSubmit}
           buttonStyle={styles.button}
           disabled={loading}
+          icon={<Icon name="check-circle" type="font-awesome" color="white" style={{ marginRight: 10 }} />}
         />
         {loading && <ActivityIndicator size="large" color="#007AFF" />}
       </Card>
@@ -259,22 +229,18 @@ const pickerSelectStyles = StyleSheet.create({
     fontSize: 16,
     paddingVertical: 12,
     paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: 'gray',
-    borderRadius: 4,
+    borderWidth: 0,
     color: 'black',
-    paddingRight: 30, // to ensure the text is never behind the icon
+    paddingRight: 30,
     marginBottom: 16,
   },
   inputAndroid: {
     fontSize: 16,
     paddingHorizontal: 10,
     paddingVertical: 8,
-    borderWidth: 0.5,
-    borderColor: 'gray',
-    borderRadius: 8,
+    borderWidth: 0,
     color: 'black',
-    paddingRight: 30, // to ensure the text is never behind the icon
+    paddingRight: 30,
     marginBottom: 16,
   },
 });
@@ -285,50 +251,58 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f8f8',
   },
   card: {
-    borderRadius: 10,
-    padding: 20,
+    borderRadius: 15,
+    padding: 25,
     backgroundColor: '#ffffff',
     shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 5,
-    marginBottom: 20,
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 10,
+    marginBottom: 30,
+    marginHorizontal: 10,
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 20,
+    color: '#007AFF',
   },
   label: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 10,
+    color: '#333',
   },
   input: {
     marginBottom: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 10,
+    borderWidth: 0,
   },
   datePicker: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'gray',
-    borderRadius: 4,
+    borderColor: '#ddd',
+    borderRadius: 8,
     padding: 12,
     marginBottom: 16,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#f9f9f9',
+    elevation: 2,
   },
   dateText: {
     fontSize: 16,
-    color: 'black',
+    color: '#333',
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#28a745',
     paddingVertical: 15,
-    borderRadius: 8,
+    borderRadius: 12,
+    marginTop: 10,
   },
 });
 

@@ -11,10 +11,11 @@ export const AuthProvider = ({ children }) => {
     const loadUser = async () => {
       try {
         const userData = await AsyncStorage.getItem('user');
-        if (userData) {
+        const remember = await AsyncStorage.getItem('rememberMe');
+        if (userData && remember === 'true') {
           const parsedUserData = JSON.parse(userData);
           setUser(parsedUserData);
-          console.log('Loaded user data:', parsedUserData); // Log loaded user data
+          console.log('Loaded user data:', parsedUserData);
         }
       } catch (error) {
         console.error('Error loading user data:', error);
@@ -26,15 +27,16 @@ export const AuthProvider = ({ children }) => {
     loadUser();
   }, []);
 
-  const login = async (userData) => {
+  const login = async (userData, rememberMe) => {
     try {
-      // Ensure userData contains userID
       if (!userData.userID) {
         throw new Error('User data does not contain userID');
       }
+      
       setUser(userData);
       await AsyncStorage.setItem('user', JSON.stringify(userData));
-      console.log('Logged in user data:', userData); // Log user data on login
+      await AsyncStorage.setItem('rememberMe', rememberMe.toString());
+      console.log('Logged in user data:', userData);
     } catch (error) {
       console.error('Error logging in user:', error);
     }
@@ -43,6 +45,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     setUser(null);
     await AsyncStorage.removeItem('user');
+    await AsyncStorage.removeItem('rememberMe');
   };
 
   return (

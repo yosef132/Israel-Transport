@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput, ScrollView } from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, Modal, ScrollView, Animated } from 'react-native';
 import { Text, Button } from 'react-native-elements';
 import axios from 'axios';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Card, Divider, TextInput } from 'react-native-paper';
+import { AntDesign } from '@expo/vector-icons';
 
 const BookingRequestsScreen = () => {
   const [bookings, setBookings] = useState([]);
@@ -13,14 +16,24 @@ const BookingRequestsScreen = () => {
   const [currentBooking, setCurrentBooking] = useState({});
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [dateField, setDateField] = useState('');
+  const fadeAnim = useState(new Animated.Value(0))[0];
 
   useEffect(() => {
     fetchBookings();
   }, []);
 
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start();
+  }, [bookings]);
+
   const fetchBookings = async () => {
     try {
-      const response = await axios.get('https://israeltransport.onrender.com/api/bookings');
+await new Promise(resolve => setTimeout(resolve, 500));
+const response = await axios.get('https://israeltransport.onrender.com/api/bookings');
       setBookings(response.data);
     } catch (error) {
       console.error('Error fetching bookings:', error);
@@ -63,10 +76,13 @@ const BookingRequestsScreen = () => {
     setModalVisible(true);
   };
 
+
   const updateBooking = async () => {
+    setLoading(true);
     try {
       await axios.put(`https://israeltransport.onrender.com/api/bookings/update/${currentBooking.BookingID}`, currentBooking);
       setModalVisible(false);
+    setLoading(false);
       fetchBookings();
     } catch (error) {
       console.error('Error updating booking:', error);
@@ -88,71 +104,40 @@ const BookingRequestsScreen = () => {
     hideDatePicker();
   };
 
-  const renderStatusCircle = (status) => {
-    let backgroundColor;
-
-    switch (status) {
-      case 'Pending':
-        backgroundColor = 'orange';
-        break;
-      case 'Confirmed':
-        backgroundColor = 'green';
-        break;
-      case 'Completed':
-        backgroundColor = 'blue';
-        break;
-      case 'Cancelled':
-        backgroundColor = 'red';
-        break;
-      default:
-        backgroundColor = 'gray';
-    }
-
-    return <View style={[styles.statusCircle, { backgroundColor }]} />;
-  };
-
   const renderBooking = ({ item }) => (
-    <View style={styles.card}>
-      <Text>Email: {item.Email}</Text>
-      <Text>Phone: {item.PhoneNumber}</Text>
-      <TouchableOpacity onPress={() => toggleExpand(item.BookingID)}>
-        <Text style={styles.expandText}>{item.expanded ? 'Hide Details' : 'Show Details'}</Text>
-      </TouchableOpacity>
-      {item.expanded && (
-        <>
-          <Text>Booking ID: {item.BookingID}</Text>
-          <Text>Full Name: {item.FullName}</Text>
-          <Text>Vehicle ID: {item.VehicleID}</Text>
-          <View style={styles.statusContainer}>
-            {renderStatusCircle(item.status)}
-            <Text>Status: {item.status}</Text>
-          </View>
-          <Text>Departure Time: {new Date(item.DepartureTime).toLocaleString()}</Text>
-          <Text>Passengers: {item.Passengers}</Text>
-          <Text>Pickup Address: {item.PickupAddress}</Text>
-          <Text>Dropoff Address: {item.DropOffAddress}</Text>
-          <Text>Notes: {item.notes}</Text>
-          <Button title="Update Status" onPress={() => handleUpdate(item, 'status')} />
-          <Button title="Update Dates" onPress={() => handleUpdate(item, 'dates')} />
-          <Button title="Update Info" onPress={() => handleUpdate(item, 'info')} />
-        </>
-      )}
-      <Button title="DELETE" onPress={() => handleDelete(item.BookingID)} />
-    </View>
+    <Animated.View style={{ opacity: fadeAnim }}>
+      <Card style={styles.card}>
+        <Card.Title 
+          title={item.FullName}
+          subtitle={`Phone : ${item.PhoneNumber}`}
+          left={(props) => <AntDesign {...props} name="solution1" size={24} color="#FF6347" />}
+        />
+      <Card.Content>
+          <Divider style={styles.divider} />
+          <Text style={styles.cardText}>Email: {item.Email}</Text>
+          <Text style={styles.cardText}>Status: {item.status}</Text>
+          <Text style={styles.cardText}>Start Trail Date: {new Date(item.startTrailDate).toLocaleString()}</Text>
+          <Text style={styles.cardText}>End Trail Date: {new Date(item.endTrailDate).toLocaleString()}</Text>
+          <Text style={styles.cardText}>Pickup Address: {item.PickupAddress}</Text>
+          <Text style={styles.cardText}>Dropoff Address: {item.DropOffAddress}</Text>
+          <Text style={styles.cardText}>Passengers: {item.Passengers}</Text>
+          <Text style={styles.cardText}>stopStations: {item.stopStations}</Text>
+          <Text style={styles.cardText}>Notes: {item.notes}</Text>
+        </Card.Content>
+        <Card.Actions style={styles.buttonContainerVertical}>
+          <Button title="Update Status" onPress={() => handleUpdate(item, 'status')} buttonStyle={styles.button} containerStyle={styles.buttonSpacing} />
+          <Button title="Update Dates" onPress={() => handleUpdate(item, 'dates')} buttonStyle={styles.button} containerStyle={styles.buttonSpacing} />
+          <Button title="Update Info" onPress={() => handleUpdate(item, 'info')} buttonStyle={styles.button} containerStyle={styles.buttonSpacing} />
+          <Button title="DELETE" onPress={() => handleDelete(item.BookingID)} buttonStyle={[styles.button, styles.deleteButton]} containerStyle={styles.buttonSpacing} />
+        </Card.Actions>
+      </Card>
+    </Animated.View>
   );
-
-  const toggleExpand = (bookingID) => {
-    setBookings((prevBookings) =>
-      prevBookings.map((booking) =>
-        booking.BookingID === bookingID ? { ...booking, expanded: !booking.expanded } : booking
-      )
-    );
-  };
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color="#FF6347" />
       </View>
     );
   }
@@ -180,9 +165,6 @@ const BookingRequestsScreen = () => {
         return (
           <>
             <Text style={styles.modalTitle}>Update Dates</Text>
-            <TouchableOpacity onPress={() => showDatePicker('DepartureTime')}>
-              <Text style={styles.datePickerText}>Departure Time: {new Date(currentBooking.DepartureTime).toLocaleString()}</Text>
-            </TouchableOpacity>
             <TouchableOpacity onPress={() => showDatePicker('startTrailDate')}>
               <Text style={styles.datePickerText}>Start Trail Date: {new Date(currentBooking.startTrailDate).toLocaleString()}</Text>
             </TouchableOpacity>
@@ -196,44 +178,44 @@ const BookingRequestsScreen = () => {
           <>
             <Text style={styles.modalTitle}>Update Info</Text>
             <TextInput
-              placeholder="Full Name"
+              label="Full Name"
               value={currentBooking.FullName}
               onChangeText={(text) => setCurrentBooking({ ...currentBooking, FullName: text })}
               style={styles.input}
             />
             <TextInput
-              placeholder="Email"
+              label="Email"
               value={currentBooking.Email}
               onChangeText={(text) => setCurrentBooking({ ...currentBooking, Email: text })}
               style={styles.input}
             />
             <TextInput
-              placeholder="Phone Number"
+              label="Phone Number"
               value={currentBooking.PhoneNumber}
               onChangeText={(text) => setCurrentBooking({ ...currentBooking, PhoneNumber: text })}
               style={styles.input}
             />
             <TextInput
-              placeholder="Pickup Address"
+              label="Pickup Address"
               value={currentBooking.PickupAddress}
               onChangeText={(text) => setCurrentBooking({ ...currentBooking, PickupAddress: text })}
               style={styles.input}
             />
             <TextInput
-              placeholder="Dropoff Address"
+              label="Dropoff Address"
               value={currentBooking.DropOffAddress}
               onChangeText={(text) => setCurrentBooking({ ...currentBooking, DropOffAddress: text })}
               style={styles.input}
             />
             <TextInput
-              placeholder="Passengers"
+              label="Passengers"
               value={String(currentBooking.Passengers)}
               onChangeText={(text) => setCurrentBooking({ ...currentBooking, Passengers: Number(text) })}
               style={styles.input}
               keyboardType="numeric"
             />
             <TextInput
-              placeholder="Notes"
+              label="Notes"
               value={currentBooking.notes}
               onChangeText={(text) => setCurrentBooking({ ...currentBooking, notes: text })}
               style={styles.input}
@@ -246,41 +228,47 @@ const BookingRequestsScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={bookings}
-        renderItem={renderBooking}
-        // keyExtractor={(item) => item.BookingID.toString()}
-      />
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
-          <View style={styles.modalContent}>
-            {renderModalContent()}
-            <Button title="Update" onPress={updateBooking} />
-            <Button title="Cancel" onPress={() => setModalVisible(false)} />
-          </View>
-        </ScrollView>
-      </Modal>
-      <DateTimePickerModal
-        isVisible={isDatePickerVisible}
-        mode="datetime"
-        onConfirm={handleDateChange}
-        onCancel={hideDatePicker}
-      />
-    </View>
+    <LinearGradient colors={['#6dd5ed', '#2193b0']} style={styles.linearGradient}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <FlatList
+          data={bookings}
+          renderItem={renderBooking}
+          keyExtractor={(item) => item.BookingID.toString()}
+        />
+
+        <Modal
+          visible={modalVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
+            <View style={styles.modalContent}>
+              {renderModalContent()}
+              <Button title="Update" onPress={updateBooking} buttonStyle={styles.button} containerStyle={styles.buttonSpacing} />
+              <Button title="Cancel" onPress={() => setModalVisible(false)} buttonStyle={[styles.button, styles.cancelButton]} containerStyle={styles.buttonSpacing} />
+            </View>
+          </ScrollView>
+        </Modal>
+
+        <DateTimePickerModal
+          isVisible={isDatePickerVisible}
+          mode="datetime"
+          onConfirm={handleDateChange}
+          onCancel={hideDatePicker}
+        />
+      </ScrollView>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  linearGradient: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
-    padding: 16,
+  },
+  container: {
+    flexGrow: 1,
+    padding: 20,
   },
   loadingContainer: {
     flex: 1,
@@ -288,66 +276,57 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   card: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
+    backgroundColor: '#ffffff',
+    borderRadius: 15,
     elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    padding: 10,
   },
-  expandText: {
-    color: 'blue',
-    textDecorationLine: 'underline',
-    marginVertical: 10,
+  cardText: {
+    fontSize: 16,
+    color: '#555',
+    marginBottom: 6,
   },
-  statusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 10,
+  divider: {
+    marginVertical: 8,
   },
-  statusCircle: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 8,
+  buttonContainerVertical: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+  },
+  button: {
+    marginTop: 10,
+    backgroundColor: '#FF6347',
+  },
+  buttonSpacing: {
+    marginVertical: 5,
+  },
+  deleteButton: {
+    backgroundColor: 'red',
   },
   modalScrollViewContent: {
     alignItems: 'center',
     justifyContent: 'center',
     flexGrow: 1,
   },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
   modalContent: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
     width: '80%',
-    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    elevation: 10,
   },
   modalTitle: {
-    fontSize: 18,
-    marginBottom: 10,
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
   },
   input: {
-    width: '100%',
-    padding: 10,
-    borderColor: 'gray',
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 10,
-  },
-  datePickerText: {
-    color: 'blue',
-    textDecorationLine: 'underline',
-    marginBottom: 10,
+    marginBottom: 15,
   },
   pickerContainer: {
     flexDirection: 'row',
@@ -358,6 +337,9 @@ const styles = StyleSheet.create({
   picker: {
     flex: 1,
     height: 50,
+  },
+  cancelButton: {
+    backgroundColor: '#555',
   },
 });
 
